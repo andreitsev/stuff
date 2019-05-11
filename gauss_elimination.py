@@ -12,6 +12,18 @@ def multiple_gcd(elements_list):
             common_gcd.append(gcd(common_gcd[-1], abs(elements_list[i])))
     return common_gcd[-1]
 
+def lcm(a, b):
+    return int(abs(a*b)/gcd(a, b))
+
+def multiple_lcm(elements_list):
+    if len(elements_list) == 1:
+        common_lcm = [elements_list]
+    else:
+        common_lcm = [lcm(abs(elements_list[0]), abs(elements_list[1]))]
+        for i in range(2, len(elements_list)):
+            common_lcm.append(lcm(common_lcm[-1], abs(elements_list[i])))
+    return common_lcm[-1]
+
 class GaussElimination(object):
     
     def __init__(self, A, b=None):
@@ -100,7 +112,8 @@ class GaussElimination(object):
                                      len(independent_variable_columns_indexes)))
             basic_elements = np.array([self.reduction_matrix[i[0], i[1]] for i in self.basic_elements_indexes]).reshape(-1, 1)
 
-            self.basis_matrix[self.basic_elements_indexes[:, 1]] = -self.reduction_matrix[sorted_rows][:, independent_variable_columns_indexes]/basic_elements
-            self.basis_matrix[independent_variable_columns_indexes] = np.eye(len(independent_variable_columns_indexes))
+            lcm_ = multiple_lcm(basic_elements.astype(int).ravel())
+            self.basis_matrix[self.basic_elements_indexes[:, 1]] = -self.reduction_matrix[sorted_rows][:, independent_variable_columns_indexes]*lcm_/basic_elements
+            self.basis_matrix[independent_variable_columns_indexes] = np.eye(len(independent_variable_columns_indexes))*lcm_
             return self.basis_matrix
     
