@@ -19,4 +19,4 @@ def adl_regression(dataframe, target_variable, lags_dict):
     data_for_regression = pd.DataFrame(data_list, columns=list(itertools.chain.from_iterable([['{}_{}'.format(varname, lag) for lag in lags_dict[varname]] for varname in lags_dict])) + ['target'])
     formula = ' '.join(['{}'.format(varname) + ' + ' for varname in data_for_regression.columns[:-1]])[:-3]
     model = smf.ols('target ~ ' + formula, data=data_for_regression).fit()
-    print(model.summary())
+    return model
