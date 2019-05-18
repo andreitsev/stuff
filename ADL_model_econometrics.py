@@ -15,14 +15,14 @@ def lags_df(dataframe, lags_dict, target_variable):
         m_l = np.max(lags_dict[varname])
         if m_l > max_lag:
             max_lag = m_l
-    target_variable_array = dataframe[target_variable].values[max_lag+1:]
+    target_variable_array = dataframe[target_variable].values[max_lag:]
     dat_dict.update({'target': target_variable_array})
     target_len = len(target_variable_array)
     colnames_list = ['target']
     for varname in lags_dict:
         variable_len = len(dataframe[varname])
         for lag in lags_dict[varname]:
-            dat_dict.update({varname + '_{}'.format(lag): dataframe[varname].values[max_lag+1-lag : variable_len-lag]})
+            dat_dict.update({varname + '_{}'.format(lag): dataframe[varname].values[max_lag-lag : variable_len-lag]})
             colnames_list.append('{}_{}'.format(varname, lag))
     return pd.DataFrame(dat_dict, columns=colnames_list)
     
@@ -44,14 +44,14 @@ def adl_regression(dataframe, target_variable, lags_dict=None,
             m_l = np.max(lags_dict[varname])
             if m_l > max_lag:
                 max_lag = m_l
-        target_variable_array = dataframe[target_variable].values[max_lag+1:]
+        target_variable_array = dataframe[target_variable].values[max_lag:]
         dat_dict.update({'target': target_variable_array})
         target_len = len(target_variable_array)
         colnames_list = ['target']
         for varname in lags_dict:
             variable_len = len(dataframe[varname])
             for lag in lags_dict[varname]:
-                dat_dict.update({varname + '_{}'.format(lag): dataframe[varname].values[max_lag+1-lag : variable_len-lag]})
+                dat_dict.update({varname + '_{}'.format(lag): dataframe[varname].values[max_lag-lag : variable_len-lag]})
                 colnames_list.append('{}_{}'.format(varname, lag))
         data_for_regression = pd.DataFrame(dat_dict, columns=colnames_list)
     else:
