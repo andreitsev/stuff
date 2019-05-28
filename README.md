@@ -1,1 +1,1 @@
-Some use(full/less) functions, that i use in different projects
+Some use(ful/less) functions, that i use in different projects
