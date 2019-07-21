@@ -4,7 +4,7 @@ def matrix2snail_vec(matrix, snail_indexes = []):
     return: возвращает вектор snail_indexes - матрица matrix, выпрямленная по правилу ниже
        0 - 1  - 2 -  3
                      |
-      11 - 12 - 13 - 4
+      11 - 12 - 13   4
        |         |   |
       10  15  - 14   5
        |             |
@@ -34,7 +34,7 @@ def snail2matrix(vec, matrix=np.zeros((n, n))):
     return: возвращает матрицу matrix заполненную из vec по улитке
        0 - 1  - 2 -  3
                      |
-      11 - 12 - 13 - 4
+      11 - 12 - 13   4
        |         |   |
       10  15  - 14   5
        |             |
