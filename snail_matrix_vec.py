@@ -10,7 +10,7 @@ def matrix2snail_vec(matrix, snail_indexes = []):
        |             |
        9 - 8  - 7 -  6
     """
-    if matrix.shape[0] >= 3:
+    if matrix.shape[0] >= 2:
         for i in range(matrix.shape[1]):
             snail_indexes.append(matrix[0, i])
         for j in range(1, matrix.shape[0]):
@@ -19,9 +19,9 @@ def matrix2snail_vec(matrix, snail_indexes = []):
             snail_indexes.append(matrix[j, k])
         for d in range(1, matrix.shape[0]-1)[::-1]:
             snail_indexes.append(matrix[d, k])
-        snail_indexing(matrix[1:-1, 1:-1], snail_indexes=snail_indexes)
+        matrix2snail_vec(matrix[1:-1, 1:-1], snail_indexes=snail_indexes)
     elif matrix.shape[0] == 1:
-        matrix2snail_vec.append(matrix[0, 0])
+        snail_indexes.append(matrix[0, 0])
         
     return np.array(snail_indexes)
 
