@@ -26,8 +26,9 @@ def multiple_lcm(elements_list):
 
 class GaussElimination(object):
     
-    def __init__(self, A, b=None):
+    def __init__(self, A=None, b=None, linear_eq_system=None):
         self.A = A
+        self.linear_eq_system = linear_eq_system
         self.b = b
         self.reduction_matrix = None
         self.basis_element_index = []
@@ -69,6 +70,9 @@ class GaussElimination(object):
         matrix: матрица для которой считается одна итерация Гаусса-Жордана
         Не использует строки, которые уже были в self.used_rows
         """
+        if self.A is None and self.linear_eq_system is not None:
+            self.A, self.b = self.make_system_from_list(self.linear_eq_system)
+        
         # Оставим уникальные и ненулевые строки в матрице:
         reduced_matrix = []
         for row in matrix:
