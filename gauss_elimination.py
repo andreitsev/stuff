@@ -34,6 +34,35 @@ class GaussElimination(object):
         self.basis_matrix = None
         self.used_rows = []
         self.used_cols = []
+        
+    def make_system_from_list(self, linear_eq_system):
+        """
+        Пример: linear_eq_system = ["2*x1 - 3*x2 + 5*x3 = 3", 
+                                    "-1*x1 + 1*x3 = 0", 
+                                    "11*x2 - 4*x5 = -2"]
+        """
+        
+        # Находим переменную с самым большим индексом
+        n_variables = 0
+        for eq in linear_eq_system:
+            for var in re.findall(r'x\d+', eq):
+                n_variables = max(n_variables, int(var.replace('x', '')))
+
+        A = np.zeros((len(linear_eq_system), n_variables))
+        b = np.zeros(len(linear_eq_system))
+        for i, eq in enumerate(linear_eq_system):
+            previous_elem = ''
+            for elem in eq.split():
+                if 'x' in elem:
+                    A[i, int(elem.split('*')[-1][1:])-1] = int(previous_elem + elem.split('*')[0])
+                    previous_elem = elem
+                elif elem in ['+', '-', '=']:
+                    previous_elem = elem
+                elif previous_elem == '=':
+                    b[i] = int(elem)
+        return A, b
+
+        
 
     def gauss_iteration(self, matrix):
         """
