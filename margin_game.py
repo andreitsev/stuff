@@ -1,4 +1,4 @@
-
+import pandas as pd
 
 print('Добро пожаловать в игру Margin Game!')
 
@@ -56,3 +56,7 @@ for round_number in range(1, n_rounds+1):
             players_stats[f"Раунд {round_number+1}"][player]['Денег после прошлого раунда'] = sector_B(
                 money=players_stats[f"Раунд {round_number}"][player]['Денег после прошлого раунда']
             )
+    print('Статистика по данному раунду:')
+    print()
+    print((pd.DataFrame(players_stats[f'Раунд {round_number+1}']).T))
+    print()
