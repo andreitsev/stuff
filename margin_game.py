@@ -35,11 +35,18 @@ def sector_B(money: float, interest_rate: int=0.1) -> float:
     """
     return money*(1 + interest_rate)
 
+sectors_dict = {
+    'sector_A': sector_A,
+    'sector_B': sector_B
+}
+
+opportunities_choices = [key for key in sectors_dict]
+
 for round_number in range(1, n_rounds+1):
     print(f'Раунд {round_number}')
     n_current_sector_A_players = 0
     for player in players_stats[f'Раунд {round_number}']:
-        print(f'Введите решение для игрока {player}:')
+        print(f'Введите решение для игрока {player}: (Варианты: {opportunities_choices})')
         players_stats[f"Раунд {round_number}"][player]['Текущее решение'] = input()
         if players_stats[f"Раунд {round_number}"][player]['Текущее решение'] == 'sector_A':
             n_current_sector_A_players += 1
