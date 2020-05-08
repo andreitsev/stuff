@@ -151,4 +151,18 @@ class GaussElimination(object):
             self.basis_matrix[self.basic_elements_indexes[:, 1]] = -self.reduction_matrix[sorted_rows][:, independent_variable_columns_indexes]*lcm_/basic_elements
             self.basis_matrix[independent_variable_columns_indexes] = np.eye(len(independent_variable_columns_indexes))*lcm_
             return self.basis_matrix
+        
+def gram_schmidt_ortogonalize(A):
+"""
+A: np.array - матрица, по столбцам которой идут базисные векторы подпространства
+return: np.array - матрица, содержащая ортобазис подпространства
+"""
+B = np.zeros_like(A).astype(float)
+B[:, 0] = A[:, 0]
+for j in range(1, B.shape[1]):
+    B[:, j] = A[:, j]
+    for k in range(j):
+        alpha_k = -(B[:, k]@A[:, j])/(B[:, k]@B[:, k])
+        B[:, j] += alpha_k*B[:, k]
+return B
     
