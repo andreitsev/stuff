@@ -1,26 +1,24 @@
 
-from copy import deepcopy
-
-def resheto_eratosfena(n: int=10) -> list:
+def prime_decomposition(number: int=10) -> dict:
     """
     Args:
-        n: в каком диапазоне искать простые числа [2, n]
+        number - число, которое необходимо разложить на простые множители
     Return:
-        список простых чисел в дипазоне [2, n]
+        словарь, ключами которого являются простые множители числа number, а значения - их кратность
     """
-    # В этот список будем складывать простые числа
-    prime_digits = []
-    # Создаём список, элементы которого будем "просеивать"
-    try_list = list(range(2, n+1))
-    # Пока есть что просеивать
-    while len(try_list) > 0:
-        # Первый элемент этого списка - простое число. Положим его в наш список и удалим из try_list
-        prime_elem = try_list.pop(0)
-        prime_digits.append(prime_elem)
-        # Пробегаем по элементам списка
-        for elem in try_list:
-            # Если элемент кратен последнему найденному простому числу - удаляем его, elem не простое число
-            if elem % prime_elem == 0:
-                try_list.remove(elem)
     
-    return prime_digits
+    end_range = number + 1
+    decomposition = []
+    for i in range(2, end_range):
+        if number % i == 0:
+            while number % i == 0:
+                number = number/i
+                decomposition.append(i)
+                
+    decomposition_dict = {}
+    for val in decomposition:
+        if val not in decomposition_dict:
+            decomposition_dict[val] = 1
+        else:
+            decomposition_dict[val] += 1
+    return decomposition_dict
