@@ -1,3 +1,4 @@
+import pickle
 import os
 import numpy as np
 
@@ -106,4 +107,38 @@ def generate_from_circle(number_of_points: int, center: list, radius: int) -> np
     center_ = np.array(center)[np.newaxis,:] * np.ones((k,2))
     return res + center_
 
+
+
+def pickle_object(object_to_save: object, path: str):
+    
+    """
+    Создаёт вложенные папки (если они не существовали до этого) и записывает (pickle.dump) файл
+    
+    Args:
+        object_to_save: что пиклить pickle.dump(object_to_save, ...)
+        path: Путь, куда сохранить файл /home/.../<object_to_save>.pkl
+    """
+    
+    previous_path = '/'
+    current_path = previous_path
+    path_len = len(path.split('/'))
+
+    for i, path_part in enumerate(path.split('/')):
+        if path_part == '':
+            continue
+        
+        current_path = os.path.join(current_path, path_part)
+        # Если такой папки нет, то
+        if path_part not in os.listdir(previous_path):
+            # Если это название файла, то запишем его
+            if i == path_len - 1:
+                pickle.dump(object_to_save, open(current_path, mode='wb'))
+            # создать её
+            else:
+                os.mkdir(current_path)
+        if i == path_len - 1:
+            pickle.dump(object_to_save, open(current_path, mode='wb'))
+
+        previous_path = current_path
+    
 
