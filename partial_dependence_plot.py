@@ -125,3 +125,99 @@ def partial_plot(
         if save_plot_path is not None:
             plt.savefig(save_plot_path);
         plt.show();
+
+
+
+def group_partial_plot(
+        df: pd.DataFrame,
+        feature_of_interest: str,
+        model: object,
+        feature_range_type: str = 'absolute',
+        feature_change_range: np.array = np.linspace(-1.5, 1.5, 21),
+        scatter_params: dict=None,
+        save_path: str = None,
+        title: str = None,
+        figsize: tuple = (16, 8),
+        type_plot: str = 'absolute',
+        threshold_feature: float = 1,
+        threshold_forecast: float = 1,
+        bins: int=70,
+        show_all: bool=True,
+        show_agg: str=None,
+):
+    """
+    Рисует влияние изменения фичи feature_of_interest на прогноз модели
+
+    Args:
+        feature_range_type: может быть "absolute" или "percent"
+        type_plot: может быть может быть "absolute" или "percent"
+        threshold_feature: нужно только для type_plot = 'percent'
+        threshold_forecast: нужно только для type_plot = 'percent'
+    """
+
+    assert type_plot in ['absolute', 'percent'], 'type_plot может быть "absolute" или "percent"'
+    assert feature_range_type in ['absolute', 'percent'], 'feature_range_type может быть "absolute" или "percent"'
+
+    tmp_df = df.copy()
+    # изначальные значения фичи
+    initial_feature_values = tmp_df[feature_of_interest].copy().values
+    # изначальные прогнозы
+    initial_forecasts = model.predict(tmp_df)
+
+    feature_values_diff, forecasts_diff = np.array([]), np.array([])
+    for change in feature_change_range:
+        if feature_range_type == 'absolute':
+            # новое значение фичи
+            new_feature_values = initial_feature_values + change
+        elif feature_range_type == 'percent':
+            new_feature_values = initial_feature_values * (1 + change)
+
+        tmp_df[feature_of_interest] = new_feature_values
+        new_forecast = model.predict(tmp_df)
+
+        if type_plot == 'absolute':
+            f_diff = new_feature_values - initial_feature_values
+            forecast_d = new_forecast - initial_forecasts
+        elif type_plot == 'percent':
+            nonzero_idxs = [i for i in range(len(initial_feature_values)) if
+                            abs(initial_feature_values[i]) > threshold_feature and
+                            abs(initial_forecasts[i]) > threshold_forecast]
+            f_diff = (new_feature_values[nonzero_idxs] - initial_feature_values[nonzero_idxs]) / initial_feature_values[
+                nonzero_idxs]
+            forecast_d = (new_forecast[nonzero_idxs] - initial_forecasts[nonzero_idxs]) / initial_forecasts[
+                nonzero_idxs]
+
+        forecasts_diff = np.append(forecasts_diff, forecast_d)
+        feature_values_diff = np.append(feature_values_diff, f_diff)
+
+    forecasts_diff = forecasts_diff[np.argsort(feature_values_diff)]
+    feature_values_diff = np.sort(feature_values_diff)
+
+    plt.figure(figsize=figsize);
+    if title is not None:
+        plt.title(title, fontsize=15);
+    if show_all:
+        plt.scatter(feature_values_diff, forecasts_diff, 
+                    s=scatter_params.get('s', 5), 
+                    color=scatter_params.get('color', 'blue'), 
+                   alpha=scatter_params.get('alpha', 1));
+    
+    
+    if show_agg is not None:
+        mean_change_df = pd.DataFrame({'forecasts_diff': forecasts_diff, "feature_values_diff": feature_values_diff})
+        mean_change_df['feature_values_diff_binarized'] = pd.cut(mean_change_df['feature_values_diff'], 
+                                                                 bins=bins).apply(lambda x: x.right)
+
+        mean_change_df = mean_change_df.groupby(['feature_values_diff_binarized'])['forecasts_diff'].mean().reset_index().dropna()\
+        .sort_values(['feature_values_diff_binarized'], ascending=True)
+
+        plt.plot([val for val in mean_change_df['feature_values_diff_binarized'].values], 
+                 mean_change_df['forecasts_diff'].values, color='red', label=f'{show_agg}');
+        plt.scatter([val for val in mean_change_df['feature_values_diff_binarized'].values], 
+                    mean_change_df['forecasts_diff'].values, s=10, color='red');
+        plt.legend(fontsize=15);
+
+    if save_path is not None:
+        plt.savefig(save_path)
+    plt.show();
+
