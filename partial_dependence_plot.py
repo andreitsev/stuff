@@ -134,16 +134,25 @@ def group_partial_plot(
         model: object,
         feature_range_type: str = 'absolute',
         feature_change_range: np.array = np.linspace(-1.5, 1.5, 21),
-        scatter_params: dict=None,
+        scatter_params: dict = None,
         save_path: str = None,
         title: str = None,
         figsize: tuple = (16, 8),
         type_plot: str = 'absolute',
         threshold_feature: float = 1,
         threshold_forecast: float = 1,
-        bins: int=70,
-        show_all: bool=True,
-        show_agg: str=None,
+        bins: int = 70,
+        show_points: bool = True,
+        show_agg: str = None,
+        feature_diffs_values: list = None,
+        feature_diffs_values_bins: int = 50,
+        feature_diffs_values_drop_zeros: bool = True,
+        feature_diffs_values_scaling_factor: int = 3,
+        feature_diffs_values_params: dict = None,
+        mean_forecast_value: float=None,
+        dont_show_outer_historical_values: bool=False,
+        xlim: tuple = None,
+        ylim: tuple = None,
 ):
     """
     Рисует влияние изменения фичи feature_of_interest на прогноз модели
@@ -153,6 +162,11 @@ def group_partial_plot(
         type_plot: может быть может быть "absolute" или "percent"
         threshold_feature: нужно только для type_plot = 'percent'
         threshold_forecast: нужно только для type_plot = 'percent'
+        feature_diffs_values_drop_zeros: выкидывать ли из рисования нулевые значения feature_diffs_values
+        feature_diffs_values_scaling_factor: определяем высоту барплота плотности значений в истории
+        mean_forecast_value: отображает в легенде среднее предсказание
+        dont_show_outer_historical_values: если True, то ограничивает ось икс только теми значениями изменений, которые
+            имели место быть в истории (в feature_diffs_values)
     """
 
     assert type_plot in ['absolute', 'percent'], 'type_plot может быть "absolute" или "percent"'
@@ -196,28 +210,69 @@ def group_partial_plot(
     plt.figure(figsize=figsize);
     if title is not None:
         plt.title(title, fontsize=15);
-    if show_all:
-        plt.scatter(feature_values_diff, forecasts_diff, 
-                    s=scatter_params.get('s', 5), 
-                    color=scatter_params.get('color', 'blue'), 
-                   alpha=scatter_params.get('alpha', 1));
-    
-    
+    if show_points:
+        plt.scatter(feature_values_diff, forecasts_diff,
+                    s=scatter_params.get('s', 5),
+                    color=scatter_params.get('color', 'blue'),
+                    alpha=scatter_params.get('alpha', 1));
+
     if show_agg is not None:
         mean_change_df = pd.DataFrame({'forecasts_diff': forecasts_diff, "feature_values_diff": feature_values_diff})
-        mean_change_df['feature_values_diff_binarized'] = pd.cut(mean_change_df['feature_values_diff'], 
+        mean_change_df['feature_values_diff_binarized'] = pd.cut(mean_change_df['feature_values_diff'],
                                                                  bins=bins).apply(lambda x: x.right)
 
-        mean_change_df = mean_change_df.groupby(['feature_values_diff_binarized'])['forecasts_diff'].mean().reset_index().dropna()\
-        .sort_values(['feature_values_diff_binarized'], ascending=True)
+        mean_change_df = mean_change_df.groupby(['feature_values_diff_binarized'])[
+            'forecasts_diff'].mean().reset_index().dropna() \
+            .sort_values(['feature_values_diff_binarized'], ascending=True)
 
-        plt.plot([val for val in mean_change_df['feature_values_diff_binarized'].values], 
-                 mean_change_df['forecasts_diff'].values, color='red', label=f'{show_agg}');
-        plt.scatter([val for val in mean_change_df['feature_values_diff_binarized'].values], 
+        plt.plot([val for val in mean_change_df['feature_values_diff_binarized'].values],
+                 mean_change_df['forecasts_diff'].values, color='red',
+        label=f'{show_agg}' if mean_forecast_value is None else f"{show_agg} \n mean predict: {round(mean_forecast_value, 2)}");
+        plt.scatter([val for val in mean_change_df['feature_values_diff_binarized'].values],
                     mean_change_df['forecasts_diff'].values, s=10, color='red');
         plt.legend(fontsize=15);
 
+    # Рисуем какие были изменения цены в истории ------------------------------------------------------------------
+    if feature_diffs_values is not None:
+        feature_diffs_values = np.array(feature_diffs_values)
+        if feature_diffs_values_drop_zeros:
+            feature_diffs_values = feature_diffs_values[feature_diffs_values != 0]
+
+        tmp = pd.cut(
+            pd.Series(feature_diffs_values).dropna(), bins=feature_diffs_values_bins
+        ).apply(lambda x: x.right)
+
+        vals, counts = np.unique(tmp, return_counts=True)
+
+        counts = counts[np.argsort(vals)]
+        vals = np.sort(vals)
+
+        if 'color' not in feature_diffs_values_params:
+            feature_diffs_values_params['color'] = 'black'
+        if 'alpha' not in feature_diffs_values_params:
+            feature_diffs_values_params['alpha'] = 1
+
+        # автоматическое определение width в plt.bar ---------------------------------------------------------------
+        normalize_by_factor = max(abs(forecasts_diff)) if show_points else max(abs(mean_change_df['forecasts_diff'].values))
+        if 'width' not in feature_diffs_values_params:
+            feature_diffs_values_params['width'] = np.mean(np.diff(vals))
+            plt.bar(vals,
+                    (counts / counts.sum()) * feature_diffs_values_scaling_factor * normalize_by_factor,
+                    **(feature_diffs_values_params or {}))
+        else:
+            plt.bar(vals,
+                    (counts / counts.sum()) * feature_diffs_values_scaling_factor * normalize_by_factor,
+                    **(feature_diffs_values_params or {}))
+        # -----------------------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------------------------
+    if dont_show_outer_historical_values:
+        plt.xlim(np.min(vals) - np.std(vals), np.max(vals) + np.std(vals))
+    else:
+        if xlim is not None:
+            plt.xlim(*xlim)
+    if ylim is not None:
+        plt.ylim(*ylim)
+    plt.xlabel(f'Абсолютное изменение {feature_of_interest}', fontsize=15);
     if save_path is not None:
         plt.savefig(save_path)
     plt.show();
-
