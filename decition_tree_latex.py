@@ -52,7 +52,7 @@ def split_evaluation_metric(X, y, feature_number, threshold, criterion):
         print('$', tmp, r'$\\')
         print()
         
-        print('$', f'Q = {round(root_metric, 3)} - ', '\\frac{', N_left, '}{', N_all, '}', f'\\cdot {round(left_metric, 3)} - ', '\\frac{', N_right,  '}{', N_all, '}', f'\\cdot {round(right_metric, 3)} = {round(split_metric, 3)}', r'$\\')
+        print('$', f'Q = {round(root_metric, 3)} - ', '\\frac{', N_left, '}{', N_all, '}', f'\\cdot {round(left_metric, 3)} - ', '\\frac{', N_right,  '}{', N_all, '}', f'\\cdot {round(right_metric, 3)} =', r'{\bf', round(split_metric, 3), '}', r'$\\')
         
         
     elif criterion == 'gini':
@@ -128,4 +128,3 @@ def find_best_split_latex(X: np.array, y: np.array, criterion='entropy'):
             print('\\bigskip')
 
         print(r'\boxed{{\bf', fr'best\_split: [feature_{best_feature_number + 1} < {round(best_threshold, 3)}]', '}}')
-            
