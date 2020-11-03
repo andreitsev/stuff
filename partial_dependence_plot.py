@@ -3,18 +3,22 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
+
 def partial_plot(
         df: pd.DataFrame,
         feature_of_interest: str,
         model: object,
-        category_feature_values_dict: dict=None,
+        category_feature_values_dict: dict = None,
         feature_domain: list = [-2.5, 2.5],
         feature_domain_type: str = 'percent',
         n_predictions: int = 100,
         plot_scatter: bool = False,
         figure: object = None,
         save_plot_path: str = None,
-        title: str=None,
+        title: str = None,
+        feature_values_distr: list = None,
+        show_current_feature_value: bool = True,
+        additional_plots: list = None,
 ):
     """
     Рисует значения предсказаний модели при изменении значения feature_of_interest на величины,
@@ -34,12 +38,15 @@ def partial_plot(
         n_predictions - сколько предсказаний делать,
         plot_scatter - рисовать ли scatter_plot или только line_plot
         figure - plt.figure(figsize=(16, 8))
+        feature_values_distr - должен быть pandas.Series объектом (иначе не посчитается pd.cut нормально)
+        show_current_feature_value - нужно ли отображать текущие значение интересующей фичи
+        additional_plots - None или список объектов вида [plt.plot(), plt.scatter(), ...]
     Returns:
         График предсказаний в зависимости от значения фичи
     """
 
     colors = ['blue', 'red', 'green', 'orange', 'pink', 'yellow', 'purple', 'black', 'brown', 'grey'] + \
-        list(matplotlib.colors.get_named_colors_mapping().values())
+             list(matplotlib.colors.get_named_colors_mapping().values())
 
     tmp_df = df.copy()
 
@@ -54,7 +61,11 @@ def partial_plot(
         if feature_domain_type == 'absolute':
             feature_domain = np.linspace(feature_domain[0], feature_domain[1], n_predictions)
         else:
-            feature_domain = np.linspace(feature_domain[0] * base_value, feature_domain[1] * base_value, n_predictions)
+            if base_value != 0:
+                feature_domain = np.linspace(feature_domain[0] * base_value, feature_domain[1] * base_value,
+                                             n_predictions)
+            else:
+                feature_domain = np.linspace(feature_domain[0] * 1, feature_domain[1] * 1, n_predictions)
 
     # Если определён словарь category_feature_values_dict, то рисуем partial plot'ы для каждого значения из
     # category_feature_values_dict ------------------------------------------------------------------------------------
@@ -81,24 +92,45 @@ def partial_plot(
                 features_variation.append(tmp_df[feature_of_interest].values[0])
                 predictions_change.append(current_prediction)
 
+            change_range_y = (min(predictions_change), max(predictions_change))
+            change_range_x = (min(features_variation), max(features_variation))
+
             if title is None:
                 plt.title(f'Предсказания модели при различных значениях переменной "{feature_of_interest}"',
                           fontsize=15);
             else:
                 plt.title(title, fontsize=15);
 
+            # Рисует плотность точек в обучении с такими значениями фичи ------------------------------------------------
+            if feature_values_distr is not None:
+                a, b = np.array([]), np.array([])
+                for key, val in pd.cut(feature_values_distr, bins=70).apply(lambda x: x.right).value_counts(1).items():
+                    a = np.append(a, key)
+                    b = np.append(b, val)
+                b = b[np.argsort(a)]
+                a = np.sort(a)
+                plt.bar(a, b * change_range_y[1] + change_range_y[0], width=5, color='black', alpha=0.2);
+                plt.ylim(change_range_y[0] - 1, change_range_y[1] + 1);
+                plt.xlim(change_range_x[0], change_range_x[1])
+            # -------------------------------------------------------------------------------------------------------------
             plt.plot(features_variation, predictions_change, color=colors[i], label=f'{cat_name}: {cat_val}');
             if plot_scatter:
                 plt.scatter(features_variation, predictions_change, color=colors[i], s=10);
 
-            plt.text(base_value, base_prediction, f'{base_value}', size=10);
-            plt.scatter(base_value, base_prediction, color='red', s=50);
+            if show_current_feature_value:
+                plt.text(base_value, base_prediction, f'{base_value}', size=10);
+                plt.scatter(base_value, base_prediction, color='red', s=50);
+
+        # Добавочные графики ----------------------------------------------------------------------------------------
+        if additional_plots is not None:
+            for graph in additional_plots:
+                graph;
 
         plt.legend(fontsize=13);
         if save_plot_path is not None:
-            plt.savefig(save_plot_path);
+            plt.savefig(save_plot_path, bbox_inches = 'tight');
         plt.show();
-    #------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     else:
         for val in feature_domain:
@@ -107,6 +139,9 @@ def partial_plot(
 
             features_variation.append(tmp_df[feature_of_interest].values[0])
             predictions_change.append(current_prediction)
+
+        change_range_y = (min(predictions_change), max(predictions_change))
+        change_range_x = (min(features_variation), max(features_variation))
 
         if figure is not None:
             figure
@@ -117,15 +152,34 @@ def partial_plot(
             plt.title(f'Предсказания модели при различных значениях переменной "{feature_of_interest}"', fontsize=15);
         else:
             plt.title(title, fontsize=15);
+        # Рисует плотность точек в обучении с такими значениями фичи ------------------------------------------------
+        if feature_values_distr is not None:
+            a, b = np.array([]), np.array([])
+            for key, val in pd.cut(feature_values_distr, bins=70).apply(lambda x: x.right).value_counts(1).items():
+                a = np.append(a, key)
+                b = np.append(b, val)
+            b = b[np.argsort(a)]
+            a = np.sort(a)
+            plt.bar(a, b * change_range_y[1] + change_range_y[0],
+                    width=5, color='black', alpha=0.2);
+            plt.ylim(change_range_y[0] - 1, change_range_y[1] + 1);
+            plt.xlim(change_range_x[0], change_range_x[1])
+
+        # Добавочные графики ----------------------------------------------------------------------------------------
+        if additional_plots is not None:
+            for graph in additional_plots:
+                graph;
+        # -------------------------------------------------------------------------------------------------------------
         plt.plot(features_variation, predictions_change);
         if plot_scatter:
             plt.scatter(features_variation, predictions_change, s=10);
-        plt.text(base_value, base_prediction, f'{base_value}', size=10);
-        plt.scatter(base_value, base_prediction, color='red', s=50);
+        if show_current_feature_value:
+            plt.text(base_value, base_prediction, f'{base_value}', size=10);
+            plt.scatter(base_value, base_prediction, color='red', s=50);
         if save_plot_path is not None:
-            plt.savefig(save_plot_path);
-        plt.show();
+            plt.savefig(save_plot_path, bbox_inches = 'tight');
 
+        plt.show();
 
 
 def group_partial_plot(
@@ -274,5 +328,5 @@ def group_partial_plot(
         plt.ylim(*ylim)
     plt.xlabel(f'Абсолютное изменение {feature_of_interest}', fontsize=15);
     if save_path is not None:
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches = 'tight')
     plt.show();
