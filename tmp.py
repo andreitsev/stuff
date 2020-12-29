@@ -1,6 +1,9 @@
 import pickle
 import os
 import numpy as np
+import pandas as pd
+from tqdm.notebook import tqdm
+
 
 def prime_decomposition(number: int=10) -> dict:
     """
@@ -141,4 +144,53 @@ def pickle_object(object_to_save: object, path: str):
 
         previous_path = current_path
     
+
+def analyse_dataframe(
+        df: pd.DataFrame,
+        show_unq_vals_threshold: int = 20,
+        verbose: bool = True,
+        key_val_gap: int = 50,
+        columns: list = None
+) -> None:
+
+    """
+    Показывает метоинформацию по датафрейму df - число строк, число нанов по каждой колонке, уникальные значения
+    в каждой колонке
+
+    Args:
+        df: pd.DataFrame, для которого сделать диагностику
+        show_unq_vals_threshold: сколько уникальных значений переменной показывать
+        verbose: визуализировать ли цикл по колонкам
+        key_val_gap: ширина '-' между уникальным значением в колонке и её числом встречаний
+    """
+
+    print(f'Размер датафрейма: {df.shape[0]:,} x {df.shape[1]:,}')
+    cols = df.columns
+    if columns is not None:
+        cols = columns
+    for col in tqdm(cols) if verbose else cols:
+        print('=' * 100)
+        print(col, end='\n' * 2)
+        # Если в колоке дата - сортируем по убыванию даты
+        is_datetime_type = str(df[col].dtype).find('datetime') != -1
+        unq_vals_dict = df[col].value_counts().sort_index(ascending=False).to_dict() if is_datetime_type else df[
+            col].value_counts().to_dict()
+        unq_vals_percents_dict = df[col].value_counts(1).sort_index(ascending=False).to_dict() if is_datetime_type else \
+        df[col].value_counts(1).to_dict()
+        print(' ' * 2, f'Число уникальных значений: {len(unq_vals_dict):,}')
+        nans = df[col].isnull().sum()
+        print(' ' * 2, f"Число NaN's: {nans:,} ({round(nans * 100 / len(df), 1)}%)")
+        print(' ' * 2, 'Уникальные значения:', end='\n' * 2)
+        n_ = 0
+        for (key1, val1), (key2, val2) in zip(unq_vals_dict.items(), unq_vals_percents_dict.items()):
+            print(' ' * 6, key1, '-' * (key_val_gap - len(f"{val1:,} ({round(val2 * 100, 2)}%)") - len(str(key1))),
+                  f"{val1:,} ({round(val2 * 100, 2)}%)")
+            n_ += 1
+            if n_ == show_unq_vals_threshold:
+                break
+    return
+
+
+
+
 
